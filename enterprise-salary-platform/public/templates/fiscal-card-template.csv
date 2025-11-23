@@ -1,0 +1,2 @@
+code,name,category,spec,brand,quantity,useDept,userName,managerDept,managerName,originalValue,acquisitionDate,accumulatedDepreciation,postingDate,voucherNo,depreciationMonths,remarks
+141126767138451525000001,示例资产,电脑及配件,ThinkBook 14,联想,1,教学部,张三,总务处,李四,5200,2024-01-05,900,2024-01-05,202401,120,示例备注

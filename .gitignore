@@ -1,0 +1,35 @@
+# --- OS System Files ---
+.DS_Store
+Thumbs.db
+
+# --- JetBrains / VS Code ---
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs
+*.njsproj
+*.sln
+*.swp
+
+# --- Java / Maven ---
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+# 如果你有本地密钥配置，屏蔽它
+src/main/resources/application-secret.yml
+
+# --- Node / Vue ---
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- Docker (Optional) ---
+# 如果 mysql_data 在项目里，绝对不能传上去！
+mysql_data/

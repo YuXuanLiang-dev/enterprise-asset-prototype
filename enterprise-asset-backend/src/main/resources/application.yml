@@ -1,0 +1,48 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api  # 所有接口统一加 /api 前缀，方便前端代理
+
+spring:
+  application:
+    name: asset-platform
+  
+  # 数据库配置 (对应之前的 Docker 设置)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 注意：如果是本地运行连接 Docker，用 localhost；如果是 Docker 内部互联，用容器名
+    url: jdbc:mysql://localhost:3306/enterprise_asset_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: root
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+  # 初始化 schema.sql / data.sql 到 MySQL，而不是只在内存数据库时才执行
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 20MB      # 单个文件大小限制 (对应前端提示)
+      max-request-size: 100MB  # 总上传大小限制
+
+# MyBatis 配置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml  # Mapper XML 文件位置
+  type-aliases-package: com.guangruan.asset.entity # 实体类包路径
+  configuration:
+    map-underscore-to-camel-case: true # 开启驼峰命名转换 (user_name -> userName)
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 控制台打印 SQL，开发调试用
+
+# 日志配置
+logging:
+  level:
+    com.guangruan.asset: debug
+    org.springframework: info
