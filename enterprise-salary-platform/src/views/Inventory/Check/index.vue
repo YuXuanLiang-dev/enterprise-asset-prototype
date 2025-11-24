@@ -41,21 +41,26 @@
     <div class="page-card">
       <div class="toolbar">
         <div class="toolbar-left">
-          <el-select v-model="searchParams.status" placeholder="盘点状态" style="width: 110px" clearable>
+          <el-select v-model="searchParams.status" placeholder="盘点状态" style="width: 110px" clearable @change="handleSearch">
             <el-option label="盘实" value="verified"/>
             <el-option label="盘亏" value="loss"/>
             <el-option label="盘盈" value="surplus"/>
           </el-select>
-          <el-select v-model="searchParams.tagStatus" placeholder="贴标状态" style="width: 110px" class="ml-10" clearable>
+          <el-select v-model="searchParams.tagStatus" placeholder="贴标状态" style="width: 110px" class="ml-10" clearable @change="handleSearch">
+            <el-option label="待贴标" value="pending_tag"/>
             <el-option label="已贴标" value="tagged"/>
+            <el-option label="无需贴标" value="no_tag"/>
           </el-select>
           <el-input 
             v-model="searchParams.keyword" 
             placeholder="资产名称/编码/规格/品牌" 
             style="width: 220px" 
             class="ml-10" 
-            :suffix-icon="Search" 
+            :suffix-icon="Search"
+            @keyup.enter="handleSearch"
           />
+          <el-button type="primary" class="ml-10" @click="handleSearch">查询</el-button>
+          <el-button class="ml-10" @click="handleReset">重置</el-button>
           
           <el-button type="primary" link class="ml-10" title="高级统计"><el-icon size="16"><DataAnalysis /></el-icon></el-button>
           
@@ -127,17 +132,20 @@
       </div>
       
       <div class="pagination-bar">
-        <div class="total-info">当前第 1 到 25 条，总共 {{ total }} 条</div>
+        <div class="total-info">当前第 {{ startIndex }} 到 {{ endIndex }} 条，总共 {{ total }} 条</div>
         <el-pagination 
           background 
           layout="prev, pager, next, slot" 
           :total="total" 
-          :page-size="25"
+          :page-size="pageSize"
+          :current-page="currentPage"
+          @current-change="handlePageChange"
         >
            <template #default>
              <span style="margin-left: 10px">
-               <el-select v-model="pageSize" size="small" style="width: 100px">
+               <el-select v-model="pageSize" size="small" style="width: 120px" @change="handlePageSizeChange">
                  <el-option label="25 条/页" :value="25" />
+                 <el-option label="50 条/页" :value="50" />
                </el-select>
              </span>
            </template>
@@ -166,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search, ArrowDown, Picture, WarningFilled, QuestionFilled, DataAnalysis } from '@element-plus/icons-vue';
 import { getInventoryData, type InventoryStats, type InventoryItem } from '@/api/inventory';
@@ -176,14 +184,22 @@ const stats = ref<InventoryStats>({ pending: 0, verified: 0, surplus: 0, loss: 0
 const tableData = ref<InventoryItem[]>([]);
 const total = ref(0);
 const pageSize = ref(25);
+const currentPage = ref(1);
 
 const showMatchDialog = ref(false);
 const showExportDialog = ref(false);
 const exportType = ref('with');
 const searchParams = reactive({ status: '', tagStatus: '', keyword: '' });
 
-const loadData = async () => {
-  const res = await getInventoryData();
+const loadData = async (page = currentPage.value) => {
+  currentPage.value = page;
+  const res = await getInventoryData({
+    status: searchParams.status || undefined,
+    tagStatus: searchParams.tagStatus || undefined,
+    keyword: searchParams.keyword || undefined,
+    page: currentPage.value,
+    size: pageSize.value
+  });
   stats.value = res.stats;
   tableData.value = res.list;
   total.value = res.total;
@@ -195,6 +211,29 @@ const getStatusType = (status: string) => {
   if (status === 'loss') return 'danger';
   return 'info';
 };
+
+const handleSearch = () => {
+  loadData(1);
+};
+
+const handleReset = () => {
+  searchParams.status = '';
+  searchParams.tagStatus = '';
+  searchParams.keyword = '';
+  loadData(1);
+};
+
+const handlePageChange = (page: number) => {
+  loadData(page);
+};
+
+const handlePageSizeChange = (size: number) => {
+  pageSize.value = size;
+  loadData(1);
+};
+
+const startIndex = computed(() => (total.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1));
+const endIndex = computed(() => Math.min(total.value, currentPage.value * pageSize.value));
 
 onMounted(() => {
   loadData();

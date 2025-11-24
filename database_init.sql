@@ -1,6 +1,192 @@
+-- Enterprise Asset Platform - 初始数据库脚本
+-- 作用：创建 enterprise_asset_db 库、建表并写入演示数据
+-- 用法：mysql -uroot -proot < database_init.sql
+
+CREATE DATABASE IF NOT EXISTS enterprise_asset_db
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE enterprise_asset_db;
+
+-- 企业信息
+CREATE TABLE IF NOT EXISTS enterprises (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    name VARCHAR(128) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 基础用户
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    password VARCHAR(64) NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 用户可访问的企业
+CREATE TABLE IF NOT EXISTS user_enterprises (
+    user_id BIGINT NOT NULL,
+    enterprise_id BIGINT NOT NULL,
+    PRIMARY KEY (user_id, enterprise_id),
+    INDEX idx_ue_user (user_id),
+    INDEX idx_ue_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 部门与人员
+CREATE TABLE IF NOT EXISTS departments (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    parent_id BIGINT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_dept_parent (parent_id),
+    INDEX idx_dept_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS personnel (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    dept_id BIGINT NOT NULL,
+    is_leader TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_personnel_dept (dept_id),
+    INDEX idx_personnel_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 存放地点
+CREATE TABLE IF NOT EXISTS locations (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    parent_id BIGINT DEFAULT NULL,
+    level INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_location_parent (parent_id),
+    INDEX idx_location_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 分类与参数
+CREATE TABLE IF NOT EXISTS categories (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    is_required TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_category_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS params (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_params_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS category_params (
+    enterprise_id BIGINT NOT NULL,
+    category_id BIGINT NOT NULL,
+    param_id BIGINT NOT NULL,
+    is_required TINYINT(1) DEFAULT 0,
+    PRIMARY KEY (enterprise_id, category_id, param_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 资产主表（资产列表/盘点用）
+CREATE TABLE IF NOT EXISTS assets (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    status VARCHAR(32) NOT NULL,
+    status_text VARCHAR(32) NOT NULL,
+    name VARCHAR(256) NOT NULL,
+    category VARCHAR(128) NOT NULL,
+    spec VARCHAR(128),
+    brand VARCHAR(128),
+    location VARCHAR(128),
+    price DECIMAL(14,2) DEFAULT 0,
+    purchase_date DATE,
+    original_value DECIMAL(14,2) DEFAULT 0,
+    acquisition_date DATE,
+    accumulated_depreciation DECIMAL(14,2) DEFAULT 0,
+    posting_date DATE,
+    voucher_no VARCHAR(64),
+    depreciation_months INT,
+    remarks VARCHAR(255),
+    use_dept VARCHAR(128),
+    user_name VARCHAR(128),
+    manager_dept VARCHAR(128),
+    manager_name VARCHAR(128),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_assets_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 财政资产卡片
+CREATE TABLE IF NOT EXISTS fiscal_asset_cards (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    code VARCHAR(64) NOT NULL UNIQUE,
+    name VARCHAR(256) NOT NULL,
+    category VARCHAR(128),
+    spec VARCHAR(128),
+    brand VARCHAR(128),
+    quantity INT DEFAULT 1,
+    use_dept VARCHAR(128),
+    user_name VARCHAR(128),
+    manager_dept VARCHAR(128),
+    manager_name VARCHAR(128),
+    original_value DECIMAL(14,2) DEFAULT 0,
+    acquisition_date DATE,
+    accumulated_depreciation DECIMAL(14,2) DEFAULT 0,
+    posting_date DATE,
+    voucher_no VARCHAR(64),
+    depreciation_months INT,
+    remarks VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_fiscal_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 资产操作记录
+CREATE TABLE IF NOT EXISTS asset_records (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    type VARCHAR(64) NOT NULL,
+    asset_code VARCHAR(64) NOT NULL,
+    action_time DATETIME NOT NULL,
+    operator VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_record_ent (enterprise_id),
+    INDEX idx_record_asset (asset_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 盘点/核实数据
+CREATE TABLE IF NOT EXISTS inventory_items (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    enterprise_id BIGINT NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    status_text VARCHAR(32) NOT NULL,
+    tag_status VARCHAR(32) NOT NULL DEFAULT 'pending_tag',
+    tag_status_text VARCHAR(32) NOT NULL DEFAULT '待贴标',
+    code_fiscal VARCHAR(64) NOT NULL,
+    name_fiscal VARCHAR(256) NOT NULL,
+    category VARCHAR(128),
+    spec VARCHAR(128),
+    brand VARCHAR(128),
+    location VARCHAR(128),
+    acquisition_date DATE,
+    original_value DECIMAL(14,2) DEFAULT 0,
+    net_value DECIMAL(14,2) DEFAULT 0,
+    accumulated_depreciation DECIMAL(14,2) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_inventory_ent (enterprise_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 演示数据
 INSERT IGNORE INTO enterprises (id, code, name) VALUES
-(1, 'SLZX', '测试企业 1'),
-(2, 'PYZX', '测试企业 1''');
+(1, 'SLZX', '石楼中学'),
+(2, 'PYZX', '番禺中学');
 
 INSERT IGNORE INTO users (id, phone, password, name) VALUES
 (1, '17620927807', '123456', '梁宇煊'),
@@ -12,11 +198,11 @@ INSERT IGNORE INTO user_enterprises (user_id, enterprise_id) VALUES
 (2, 1);
 
 INSERT IGNORE INTO departments (id, enterprise_id, name, parent_id) VALUES
-(1, 1, '测试企业 1''', NULL),
+(1, 1, '石楼中学', NULL),
 (2, 1, '电教', 1),
 (3, 1, '团委', 1),
 (4, 1, '后勤', 1),
-(11, 2, '测试企业 1''', NULL),
+(11, 2, '番禺中学', NULL),
 (12, 2, '教学部', 11),
 (13, 2, '总务处', 11);
 
@@ -80,7 +266,7 @@ INSERT IGNORE INTO assets (enterprise_id, code, status, status_text, name, categ
 VALUES
 (1, 'ZY2019000029', 'idle', '闲置', '篮球奖杯', '其他体育设备设施', '-', '无', '综合楼一层', 120.00, '2025-01-01', 120.00, '2025-01-01', 0.00, '2025-01-05', '202501', 180, ''),
 (1, 'ZY2019000028', 'idle', '闲置', '联想台式电脑主机', '计算机设备', 'ThinkCentre M720q', '联想', '综合楼二层', 4500.00, '2024-12-01', 4500.00, '2024-12-01', 3300.00, '2024-12-05', '202412', 180, ''),
-(1, 'ZY2019000027', 'in_use', '在用', '文件柜', '其他柜类', '1.8m', '国产', '综合楼一层', 800.00, '2023-05-01', 800.00, '2023-05-01', 160.00, '2023-05-10', '202305', 120, ''),
+(1, 'ZY2019000027', 'in_use', '在用', '文件柜', '其他台、桌类', '1.8m', '国产', '综合楼一层', 800.00, '2023-05-01', 800.00, '2023-05-01', 160.00, '2023-05-10', '202305', 120, ''),
 (1, 'ZY2019000026', 'in_use', '在用', '美术桌', '其他台、桌类', '100*200cm', '国产', '图书阅览室', 1800.00, '2022-03-12', 1800.00, '2022-03-12', 450.00, '2022-03-20', '202203', 180, ''),
 (1, 'ZY2019000025', 'idle', '闲置', '篮球架', '其他体育设备设施', '户外款', '国产', '综合楼', 2600.00, '2021-09-01', 2600.00, '2021-09-01', 1300.00, '2021-09-10', '202109', 120, ''),
 (1, 'ZY2019000024', 'in_use', '在用', 'A3黑白打印机', 'A3黑白打印机', '激光', '惠普', '综合楼二层', 5200.00, '2020-06-01', 5200.00, '2020-06-01', 2600.00, '2020-06-05', '202006', 120, ''),

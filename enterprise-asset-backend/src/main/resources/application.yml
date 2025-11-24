@@ -21,10 +21,10 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 30000
 
-  # 初始化 schema.sql / data.sql 到 MySQL，而不是只在内存数据库时才执行
+  # 不再自动执行 schema.sql / data.sql，初始化请手动导入根目录的 SQL 脚本
   sql:
     init:
-      mode: always
+      mode: never
       encoding: UTF-8
 
   # 文件上传配置

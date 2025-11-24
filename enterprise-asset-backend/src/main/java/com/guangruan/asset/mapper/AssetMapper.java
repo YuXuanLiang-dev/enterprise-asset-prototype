@@ -113,4 +113,33 @@ public interface AssetMapper {
         </script>
         """)
     int deleteAssets(@Param("enterpriseId") Long enterpriseId, @Param("ids") List<Long> ids);
+
+    @org.apache.ibatis.annotations.Update("""
+        <script>
+        UPDATE assets
+        SET status = #{status}, status_text = #{statusText}
+        WHERE enterprise_id = #{enterpriseId}
+          AND id IN
+          <foreach item='item' collection='ids' open='(' separator=',' close=')'>
+            #{item}
+          </foreach>
+        </script>
+        """)
+    int updateStatusBatch(@Param("enterpriseId") Long enterpriseId,
+                          @Param("ids") List<Long> ids,
+                          @Param("status") String status,
+                          @Param("statusText") String statusText);
+
+    @Select("""
+        <script>
+        SELECT id, code
+        FROM assets
+        WHERE enterprise_id = #{enterpriseId}
+          AND id IN
+          <foreach item='item' collection='ids' open='(' separator=',' close=')'>
+            #{item}
+          </foreach>
+        </script>
+        """)
+    List<Asset> findByIds(@Param("enterpriseId") Long enterpriseId, @Param("ids") List<Long> ids);
 }

@@ -27,3 +27,7 @@ export interface AssetListItem {
 // 获取列表
 export const getAssetListMain = (params?: any) =>
   http.get<{ list: AssetListItem[]; total: number }>('/assets', { params })
+
+// 批量状态操作（领用/报修/报废/归还/变更）
+export const batchOperateAssets = (action: string, ids: number[]) =>
+  http.post(`/assets/actions/${action}`, { ids })

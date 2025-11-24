@@ -9,6 +9,8 @@ public class InventoryItem {
     private Long id;
     private String status;
     private String statusText;
+    private String tagStatus;
+    private String tagStatusText;
     private String codeFiscal;
     private String nameFiscal;
     private String category;

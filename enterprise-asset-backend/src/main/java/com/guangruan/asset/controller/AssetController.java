@@ -104,4 +104,47 @@ public class AssetController {
         record.setOperator((operator == null || operator.isBlank()) ? "系统" : operator);
         assetRecordMapper.insertRecord(record);
     }
+
+    @PostMapping("/actions/{action}")
+    public Map<String, Object> batchStatusChange(@PathVariable String action,
+                                                 @RequestHeader(value = "X-Enterprise-Id", required = false) Long enterpriseId,
+                                                 @RequestHeader(value = "X-Operator", required = false) String operator,
+                                                 @RequestBody Map<String, List<Long>> payload) {
+        long requiredEnterpriseId = requireEnterpriseId(enterpriseId);
+        List<Long> ids = payload.get("ids");
+        if (ids == null || ids.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "缺少要操作的ID");
+        }
+        StatusChange change = resolveAction(action);
+        if (change == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "不支持的操作类型");
+        }
+        List<Asset> assets = assetMapper.findByIds(requiredEnterpriseId, ids);
+        if (assets.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "未找到资产");
+        }
+        assetMapper.updateStatusBatch(requiredEnterpriseId, ids, change.status, change.statusText);
+        for (Asset asset : assets) {
+            recordAction(requiredEnterpriseId, change.recordType, asset.getCode(), operator);
+        }
+        Map<String, Object> resp = new HashMap<>();
+        resp.put("updated", ids.size());
+        resp.put("status", change.status);
+        resp.put("statusText", change.statusText);
+        return resp;
+    }
+
+    private StatusChange resolveAction(String action) {
+        return switch (action) {
+            case "change" -> new StatusChange("in_use", "变更", "资产变更");
+            case "assign" -> new StatusChange("in_use", "在用", "资产领用");
+            case "repair" -> new StatusChange("repair", "维修", "资产报修");
+            case "scrap" -> new StatusChange("scrapped", "报废", "资产报废");
+            case "return" -> new StatusChange("idle", "闲置", "资产归还");
+            default -> null;
+        };
+    }
+
+    private record StatusChange(String status, String statusText, String recordType) {
+    }
 }

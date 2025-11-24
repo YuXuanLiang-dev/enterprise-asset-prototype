@@ -158,6 +158,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     enterprise_id BIGINT NOT NULL,
     status VARCHAR(32) NOT NULL,
     status_text VARCHAR(32) NOT NULL,
+    tag_status VARCHAR(32) NOT NULL DEFAULT 'pending_tag',
+    tag_status_text VARCHAR(32) NOT NULL DEFAULT '待贴标',
     code_fiscal VARCHAR(64) NOT NULL,
     name_fiscal VARCHAR(256) NOT NULL,
     category VARCHAR(128),

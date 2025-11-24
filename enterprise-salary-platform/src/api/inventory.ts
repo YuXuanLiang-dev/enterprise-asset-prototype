@@ -16,6 +16,8 @@ export interface InventoryItem {
   id: number
   status: 'pending' | 'verified' | 'surplus' | 'loss'
   statusText: string
+  tagStatus?: 'pending_tag' | 'tagged' | 'no_tag'
+  tagStatusText?: string
   photo?: string
   codeFiscal: string
   nameFiscal: string

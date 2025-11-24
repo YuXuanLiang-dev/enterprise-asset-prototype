@@ -157,7 +157,7 @@ import { ref, reactive, onMounted } from 'vue';
 import { ArrowDown, Search, Picture } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import http from '@/api/http';
-import { getAssetListMain, type AssetListItem } from '@/api/assetList';
+import { batchOperateAssets, getAssetListMain, type AssetListItem } from '@/api/assetList';
 
 const tableData = ref<AssetListItem[]>([]);
 const total = ref(0);
@@ -215,7 +215,27 @@ const handleAssetCommand = async (command: string) => {
     await handleDelete(selectedRows.value.map((i) => i.id));
     return;
   }
-  ElMessage.info(`操作 ${command} 暂未实现`);
+  const actionText: Record<string, string> = {
+    change: '变更',
+    assign: '领用',
+    repair: '报修',
+    scrap: '报废',
+    return: '归还'
+  };
+  if (!actionText[command]) {
+    ElMessage.info(`操作 ${command} 暂未实现`);
+    return;
+  }
+  try {
+    loading.value = true;
+    await batchOperateAssets(command, selectedRows.value.map((i) => i.id));
+    ElMessage.success(`${actionText[command]}成功`);
+    await loadData();
+  } catch (e: any) {
+    ElMessage.error(e?.response?.data?.message || `${actionText[command]}失败`);
+  } finally {
+    loading.value = false;
+  }
 };
 const handleBatchUpdate = () => { showImportDialog.value = true; };
 const handleSearch = () => { showFilterDrawer.value = false; loadData(); };

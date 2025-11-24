@@ -20,9 +20,12 @@ brew install --cask intellij-idea-ce
 ```bash
 cd /Users/xuan/Desktop/enterprise-asset
 docker compose up -d asset-mysql
+# 首次初始化库和演示数据
+mysql -uroot -proot < database_init.sql
 ```
-- 端口/账号：`3306`，`root/root`，数据库名 `enterprise_asset_db`  
-- 数据文件在 `mysql_data/`，重启容器数据不丢。
+- 端口/账号：`3306`，`root/root`，数据库名 `enterprise_asset_db`（由 `database_init.sql` 创建）
+- 数据文件在 `mysql_data/`，重启容器数据不丢；如看到历史遗留的 `1/mysqldata` 目录，可删除后再启动。
+- 旧环境如已建库，请执行 `ALTER TABLE inventory_items ADD COLUMN tag_status VARCHAR(32) NOT NULL DEFAULT 'pending_tag', ADD COLUMN tag_status_text VARCHAR(32) NOT NULL DEFAULT '待贴标';` 或重新导入 `database_init.sql` 以获得最新字段。
 - 如使用自有 MySQL，请确保连接串与 `enterprise-asset-backend/src/main/resources/application.yml` 保持一致。
 
 ## 4. 启动后端（Spring Boot）
@@ -30,7 +33,7 @@ docker compose up -d asset-mysql
 cd /Users/xuan/Desktop/enterprise-asset/enterprise-asset-backend
 ./mvnw spring-boot:run
 ```
-- 首次启动会自动执行 `schema.sql` + `data.sql`，创建表并写入演示数据。
+- 后端启动不再自动建库导数，务必先手动执行根目录的 `database_init.sql`。
 - 服务地址 `http://localhost:8080/api`。
 - 演示账号：手机号 `17620927807`，密码 `123456`。
 

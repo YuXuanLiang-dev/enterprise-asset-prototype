@@ -26,14 +26,15 @@ public class InventoryController {
     @GetMapping
     public Map<String, Object> list(@RequestHeader(value = "X-Enterprise-Id", required = false) Long enterpriseId,
                                     @RequestParam(required = false) String status,
+                                    @RequestParam(required = false) String tagStatus,
                                     @RequestParam(required = false) String keyword,
                                     @RequestParam(defaultValue = "1") int page,
                                     @RequestParam(defaultValue = "25") int size) {
         long requiredEnterpriseId = requireEnterpriseId(enterpriseId);
         int limit = Math.max(size, 1);
         int offset = (Math.max(page, 1) - 1) * limit;
-        List<InventoryItem> list = inventoryMapper.findItems(requiredEnterpriseId, status, keyword, offset, limit);
-        long total = inventoryMapper.countItems(requiredEnterpriseId, status, keyword);
+        List<InventoryItem> list = inventoryMapper.findItems(requiredEnterpriseId, status, tagStatus, keyword, offset, limit);
+        long total = inventoryMapper.countItems(requiredEnterpriseId, status, tagStatus, keyword);
 
         InventoryStats stats = buildStats(requiredEnterpriseId);
 
@@ -57,10 +58,16 @@ public class InventoryController {
                 }
             }
         }
-        // 演示：待贴标等同于已盘实，未实现贴标字段时默认 0
-        stats.setPendingTag(stats.getVerified());
-        stats.setTagged(0L);
-        stats.setNoTag(0L);
+        List<StatusStat> tagStats = inventoryMapper.countByTagStatus(enterpriseId);
+        for (StatusStat stat : tagStats) {
+            switch (stat.getStatus()) {
+                case "pending_tag" -> stats.setPendingTag(stat.getCount());
+                case "tagged" -> stats.setTagged(stat.getCount());
+                case "no_tag" -> stats.setNoTag(stat.getCount());
+                default -> {
+                }
+            }
+        }
         return stats;
     }
 
