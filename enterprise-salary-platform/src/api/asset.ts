@@ -34,3 +34,6 @@ export const deleteAssets = (ids: number[]) =>
     method: 'DELETE',
     data: { ids }
   })
+
+export const importFiscalCards = (data: any[]) =>
+  http.post('/fiscal-cards/import', data)

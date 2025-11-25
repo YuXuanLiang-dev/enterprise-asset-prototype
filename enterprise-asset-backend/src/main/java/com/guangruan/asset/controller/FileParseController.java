@@ -24,6 +24,8 @@ import lombok.RequiredArgsConstructor;
 import com.guangruan.asset.mapper.AssetRecordMapper;
 import com.guangruan.asset.model.AssetRecord;
 
+import org.apache.poi.ss.usermodel.DataFormatter;
+
 @RestController
 @RequestMapping("/files")
 @Slf4j
@@ -31,6 +33,7 @@ import com.guangruan.asset.model.AssetRecord;
 public class FileParseController {
 
     private final AssetRecordMapper assetRecordMapper;
+    private final DataFormatter dataFormatter = new DataFormatter();
 
     @PostMapping("/parse/{type}")
     public Map<String, Object> parse(@PathVariable String type,
@@ -93,7 +96,7 @@ public class FileParseController {
         int lastCell = row.getLastCellNum();
         for (int i = 0; i < lastCell; i++) {
             Cell cell = row.getCell(i);
-            cells.add(cell == null ? null : cell.toString().trim());
+            cells.add(cell == null ? null : dataFormatter.formatCellValue(cell).trim());
         }
         return cells;
     }
@@ -115,7 +118,7 @@ public class FileParseController {
                 }
                 Cell cell = row.getCell(c);
                 if (cell != null) {
-                    String value = cell.toString().trim();
+                    String value = dataFormatter.formatCellValue(cell).trim();
                     if (!value.isBlank()) {
                         hasValue = true;
                         map.put(header, value);

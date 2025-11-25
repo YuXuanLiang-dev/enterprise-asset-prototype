@@ -46,6 +46,24 @@ public class FiscalAssetCardController {
         return result;
     }
 
+    @org.springframework.web.bind.annotation.PostMapping("/import")
+    public Map<String, Object> importCards(@RequestHeader(value = "X-Enterprise-Id", required = false) Long enterpriseId,
+                                           @RequestHeader(value = "X-Operator", required = false) String operator,
+                                           @RequestBody List<FiscalAssetCard> cards) {
+        long requiredEnterpriseId = requireEnterpriseId(enterpriseId);
+        if (cards == null || cards.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "导入数据为空");
+        }
+        for (FiscalAssetCard card : cards) {
+            card.setEnterpriseId(requiredEnterpriseId);
+        }
+        int count = fiscalAssetCardMapper.batchInsert(cards);
+        recordAction(requiredEnterpriseId, "导入财政资产卡片", "批量导入" + count, operator);
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", count);
+        return result;
+    }
+
     @PutMapping("/{id}")
     public FiscalAssetCard update(@PathVariable Long id,
                                   @RequestHeader(value = "X-Enterprise-Id", required = false) Long enterpriseId,

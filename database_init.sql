@@ -185,8 +185,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
 
 -- 演示数据
 INSERT IGNORE INTO enterprises (id, code, name) VALUES
-(1, 'SLZX', '石楼中学'),
-(2, 'PYZX', '番禺中学');
+(1, 'TEST1', '测试企业 1'),
+(2, 'TEST2', '测试企业 2');
 
 INSERT IGNORE INTO users (id, phone, password, name) VALUES
 (1, '17620927807', '123456', '梁宇煊'),
@@ -198,11 +198,11 @@ INSERT IGNORE INTO user_enterprises (user_id, enterprise_id) VALUES
 (2, 1);
 
 INSERT IGNORE INTO departments (id, enterprise_id, name, parent_id) VALUES
-(1, 1, '石楼中学', NULL),
+(1, 1, ' 测试企业 1', NULL),
 (2, 1, '电教', 1),
 (3, 1, '团委', 1),
 (4, 1, '后勤', 1),
-(11, 2, '番禺中学', NULL),
+(11, 2, ' 测试企业 2', NULL),
 (12, 2, '教学部', 11),
 (13, 2, '总务处', 11);
 

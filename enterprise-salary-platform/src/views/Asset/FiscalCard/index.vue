@@ -134,7 +134,7 @@
          <div class="el-upload__text">拖拽上传或点击上传</div>
        </el-upload>
        <template #footer>
-         <div class="dialog-footer center-footer"><el-button class="btn-orange" @click="showImportDialog = false">导入</el-button><el-button @click="showImportDialog = false">取消</el-button></div>
+         <div class="dialog-footer center-footer"><el-button class="btn-orange" @click="handleConfirmImport">导入</el-button><el-button @click="showImportDialog = false">取消</el-button></div>
        </template>
     </el-dialog>
   </div>
@@ -147,7 +147,7 @@ import { ArrowDown, Filter, Search, Warning } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadRequestOptions } from 'element-plus/es/components/upload/src/upload';
 import { uploadAndParse } from '@/api/file';
-import { deleteAssets, getAssetList, updateAsset, type AssetItem } from '@/api/asset';
+import { deleteAssets, getAssetList, updateAsset, importFiscalCards, type AssetItem } from '@/api/asset';
 
 const tableData = ref<AssetItem[]>([]);
 const allData = ref<AssetItem[]>([]);
@@ -163,6 +163,7 @@ const categoryOptions = ref<string[]>([]);
 const searchParams = reactive({ category: '', keyword: '' });
 const filterForm = reactive({ useDept: '', user: '', managerDept: '', manager: '' });
 const editForm = ref<AssetItem>({} as AssetItem);
+const importData = ref<any[]>([]);
 
 const loadData = async () => {
   const res = await getAssetList(searchParams);
@@ -218,8 +219,60 @@ const handleResetFilter = () => { filterForm.useDept = ''; filterForm.user = '';
 onMounted(() => { loadData(); });
 
 const handleFiscalUpload = async (options: UploadRequestOptions) => {
-  await uploadAndParse('fiscal-cards', options.file as File);
-  ElMessage.success('文件解析完成');
+  const res = await uploadAndParse('fiscal-cards', options.file as File);
+  importData.value = res.preview;
+  ElMessage.success(`文件解析完成，共 ${res.count} 条数据`);
+};
+
+const handleConfirmImport = async () => {
+  if (importData.value.length === 0) {
+     ElMessage.warning('请先上传并解析文件');
+     return;
+  }
+
+  // 字段映射：Excel表头 -> API字段名
+  const headerMap: Record<string, string> = {
+    '资产编码': 'code',
+    '资产名称': 'name',
+    '资产分类': 'category',
+    '规格型号': 'spec',
+    '品牌': 'brand',
+    '数量': 'quantity',
+    '使用部门': 'useDept',
+    '使用人': 'userName',
+    '管理部门': 'managerDept',
+    '管理人': 'managerName',
+    '原值': 'originalValue',
+    '取得日期': 'acquisitionDate',
+    '累计折旧': 'accumulatedDepreciation',
+    '记账日期': 'postingDate',
+    '记账凭证号': 'voucherNo',
+    '折旧年月': 'depreciationMonths',
+    '备注': 'remarks'
+  };
+
+  const mappedData = importData.value.map(row => {
+    const newRow: any = {};
+    for (const key in row) {
+      // 移除表头可能存在的空格
+      const cleanKey = key.trim();
+      const targetKey = headerMap[cleanKey] || cleanKey;
+      newRow[targetKey] = row[key];
+    }
+    // 数据清洗：处理可能的数字格式问题
+    if (newRow.quantity) newRow.quantity = Number(newRow.quantity);
+    if (newRow.originalValue) newRow.originalValue = Number(newRow.originalValue);
+    if (newRow.accumulatedDepreciation) newRow.accumulatedDepreciation = Number(newRow.accumulatedDepreciation);
+    if (newRow.depreciationMonths) newRow.depreciationMonths = Number(newRow.depreciationMonths);
+    
+    return newRow;
+  });
+
+  await importFiscalCards(mappedData);
+  ElMessage.success('导入成功');
+  showImportDialog.value = false;
+  loadData();
+  importData.value = [];
 };
 </script>
 

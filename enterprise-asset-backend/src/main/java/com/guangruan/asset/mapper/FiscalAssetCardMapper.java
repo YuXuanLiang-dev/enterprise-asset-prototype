@@ -65,4 +65,24 @@ public interface FiscalAssetCardMapper {
         </script>
         """)
     int deleteCards(@Param("enterpriseId") Long enterpriseId, @Param("ids") List<Long> ids);
+
+    @org.apache.ibatis.annotations.Insert("""
+        <script>
+        INSERT INTO fiscal_asset_cards (
+            enterprise_id, code, name, category, spec, brand, quantity,
+            use_dept, user_name, manager_dept, manager_name,
+            original_value, acquisition_date, accumulated_depreciation,
+            posting_date, voucher_no, depreciation_months, remarks
+        ) VALUES
+        <foreach collection='cards' item='card' separator=','>
+        (
+            #{card.enterpriseId}, #{card.code}, #{card.name}, #{card.category}, #{card.spec}, #{card.brand}, #{card.quantity},
+            #{card.useDept}, #{card.userName}, #{card.managerDept}, #{card.managerName},
+            #{card.originalValue}, #{card.acquisitionDate}, #{card.accumulatedDepreciation},
+            #{card.postingDate}, #{card.voucherNo}, #{card.depreciationMonths}, #{card.remarks}
+        )
+        </foreach>
+        </script>
+        """)
+    int batchInsert(@Param("cards") List<FiscalAssetCard> cards);
 }
