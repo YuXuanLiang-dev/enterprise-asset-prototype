@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # --- 数据库服务 ---
   asset-mysql:
     image: mysql:8.0
     container_name: asset-mysql
@@ -9,10 +10,42 @@ services:
       - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: enterprise_asset_db  # 根据 guide 修正库名
       TZ: Asia/Shanghai
     command: 
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
       --default-authentication-plugin=mysql_native_password
     volumes:
-      - ./mysql_data:/var/lib/mysql  # 如有遗留的 1/mysqldata 旧目录可删除后再启动
+      - ./mysql_data:/var/lib/mysql
+      # 自动执行根目录下的 database_init.sql
+      - ./database_init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # --- 后端服务 ---
+  asset-backend:
+    build: 
+      context: ./enterprise-asset-backend
+      dockerfile: Dockerfile
+    container_name: asset-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      # 覆盖 application.yml 中的 localhost 连接串
+      SPRING_DATASOURCE_URL: jdbc:mysql://asset-mysql:3306/enterprise_asset_db?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+    depends_on:
+      - asset-mysql
+
+  # --- 前端服务 ---
+  asset-frontend:
+    build:
+      context: ./enterprise-salary-platform
+      dockerfile: Dockerfile
+    container_name: asset-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - asset-backend
