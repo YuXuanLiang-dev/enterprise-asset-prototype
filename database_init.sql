@@ -2,6 +2,8 @@
 -- 作用：创建 enterprise_asset_db 库、建表并写入演示数据
 -- 用法：mysql -uroot -proot < database_init.sql
 
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS enterprise_asset_db
   DEFAULT CHARACTER SET utf8mb4
   COLLATE utf8mb4_unicode_ci;
